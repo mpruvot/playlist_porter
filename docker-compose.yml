@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # Backend FastAPI Service
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: playlist-porter-backend
+    ports:
+      - "8000:8000"
+    environment:
+      # Application
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DEBUG: ${DEBUG:-true}
+      HOST: 0.0.0.0
+      PORT: 8000
+      
+      # Spotify Configuration
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
+    volumes:
+      # Mount .env file if it exists in backend directory
+      - ./backend/.env:/app/.env:ro
+      # Mount source code for development
+      - ./backend:/app
+      - /app/.venv  # Exclude venv from mount
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - playlist-porter-network
+
+networks:
+  playlist-porter-network:
+    driver: bridge
+    name: playlist-porter-network 
