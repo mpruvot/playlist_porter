@@ -1,5 +1,3 @@
-"""Spotify-specific API dependencies for FastAPI."""
-
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
@@ -9,7 +7,6 @@ from src.core.config import spotify_config
 from src.domain.services.migration_manager import MigrationManager
 from src.domain.services.playlist_manager import PlaylistManager
 
-# Simple Bearer token for Swagger UI
 bearer = HTTPBearer(auto_error=False)
 
 

@@ -1,5 +1,3 @@
-"""Main application for Playlist Porter."""
-
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -16,13 +14,8 @@ logger = get_logger("main")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Application lifespan management."""
-    # Startup
     logger.info(f"Starting Playlist Porter ({app_config.environment})")
-
     yield
-
-    # Shutdown
     logger.info("Shutting down...")
 
 
@@ -34,7 +27,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS configuration - Fixed for credentials support
 allowed_origins = [
     "http://localhost:3000",
     "http://localhost:3001",
@@ -44,7 +36,6 @@ allowed_origins = [
     "https://localhost:3001",
 ]
 
-# Add production domains if not in development
 if app_config.environment == "production":
     allowed_origins.extend(
         [
@@ -61,6 +52,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
 app.include_router(health.router, prefix="/health", tags=["Health"])
-app.include_router(providers_router, prefix="/playlists", tags=["Music Providers"])
+app.include_router(providers_router, tags=["API"])
