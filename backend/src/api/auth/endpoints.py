@@ -1,23 +1,19 @@
 """Authentication endpoints."""
 
 from datetime import timedelta
-from typing import Annotated
+from typing import Annotated, Literal, cast
 
 from fastapi import (
     APIRouter,
     Cookie,
     Depends,
     HTTPException,
-    Request,
+    Query,
     Response,
     status,
-    Query,
 )
-
 from fastapi.responses import RedirectResponse
-
 from src.api.dependencies.auth import (
-    AuthenticatedUser,
     get_auth_config,
     get_auth_service,
     get_current_user,
@@ -25,57 +21,48 @@ from src.api.dependencies.auth import (
 from src.core.config import AuthConfig
 from src.domain.models.auth_session import (
     AuthSession,
-    OAuthCallback,
-    OAuthRequest,
+    SpotifyOAuthCallback,
+    SpotifyOAuthRequest,
 )
 from src.domain.models.user import User
-from src.domain.services.auth_service import AuthService, AuthenticationError
+from src.domain.services.auth_service import AuthenticationError, AuthService
 
 router = APIRouter()
 
 
-@router.get("/oauth/{provider}", response_class=RedirectResponse)
-async def oauth_login(
-    provider: str,
+@router.get("/spotify/login", response_class=RedirectResponse)
+async def spotify_login(
     auth_service: Annotated[AuthService, Depends(get_auth_service)],
     redirect_url: str | None = Query(
         default=None, description="Redirect URL after auth"
     ),
 ) -> RedirectResponse:
-    """Initiate OAuth login with the specified provider."""
+    """Initiate Spotify OAuth login."""
     try:
-        # Define provider-specific scopes
-        provider_scopes = {
-            "spotify": "user-read-private user-read-email playlist-read-private playlist-modify-public playlist-modify-private",
-            "google": "openid email profile",
-            "github": "user:email",
-        }
-
-        request = OAuthRequest(
-            provider=provider,
+        request = SpotifyOAuthRequest(
             redirect_url=redirect_url,
-            scopes=provider_scopes.get(provider, ""),
+            scopes="user-read-private user-read-email playlist-read-private playlist-modify-public playlist-modify-private",
         )
 
-        oauth_url = await auth_service.get_oauth_authorization_url(request)
+        oauth_url = await auth_service.get_spotify_oauth_url(request)
         return RedirectResponse(url=oauth_url)
 
     except AuthenticationError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
-@router.post("/oauth/callback", response_model=User)
-async def oauth_callback(
+@router.post("/spotify/callback", response_model=User)
+async def spotify_callback(
     response: Response,
     auth_service: Annotated[AuthService, Depends(get_auth_service)],
     auth_config: Annotated[AuthConfig, Depends(get_auth_config)],
-    code: str = Query(..., description="OAuth authorization code"),
+    code: str = Query(..., description="Spotify authorization code"),
     state: str | None = Query(default=None, description="OAuth state parameter"),
 ) -> User:
-    """Handle OAuth callback and create user session."""
+    """Handle Spotify OAuth callback and create user session."""
     try:
-        callback = OAuthCallback(code=code, state=state)
-        user, session = await auth_service.handle_oauth_callback(callback)
+        callback = SpotifyOAuthCallback(code=code, state=state)
+        user, session = await auth_service.handle_spotify_callback(callback)
 
         # Set secure cookies with Supabase tokens
         _set_session_cookies(response, session, auth_config)
@@ -164,7 +151,7 @@ def _set_session_cookies(
         max_age=3600,  # 1 hour - Supabase default
         httponly=True,
         secure=auth_config.cookie_secure,
-        samesite=auth_config.cookie_samesite,
+        samesite=cast(Literal["lax", "strict", "none"], auth_config.cookie_samesite),
         domain=auth_config.cookie_domain,
         path="/",
     )
@@ -177,7 +164,9 @@ def _set_session_cookies(
             max_age=int(timedelta(days=7).total_seconds()),  # 7 days
             httponly=True,
             secure=auth_config.cookie_secure,
-            samesite=auth_config.cookie_samesite,
+            samesite=cast(
+                Literal["lax", "strict", "none"], auth_config.cookie_samesite
+            ),
             domain=auth_config.cookie_domain,
             path="/",
         )
@@ -190,7 +179,9 @@ def _set_session_cookies(
             max_age=3600,  # 1 hour - depends on provider
             httponly=True,
             secure=auth_config.cookie_secure,
-            samesite=auth_config.cookie_samesite,
+            samesite=cast(
+                Literal["lax", "strict", "none"], auth_config.cookie_samesite
+            ),
             domain=auth_config.cookie_domain,
             path="/",
         )

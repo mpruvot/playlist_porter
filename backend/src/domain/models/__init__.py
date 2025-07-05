@@ -2,10 +2,8 @@
 
 from src.domain.models.auth_session import (
     AuthSession,
-    LoginRequest,
-    OAuthCallback,
-    OAuthRequest,
-    RegisterRequest,
+    SpotifyOAuthCallback,
+    SpotifyOAuthRequest,
     TokenPair,
 )
 from src.domain.models.playlist import Playlist
@@ -20,8 +18,6 @@ __all__ = [
     "User",
     "AuthSession",
     "TokenPair",
-    "LoginRequest",
-    "RegisterRequest",
-    "OAuthRequest",
-    "OAuthCallback",
+    "SpotifyOAuthRequest",
+    "SpotifyOAuthCallback",
 ]

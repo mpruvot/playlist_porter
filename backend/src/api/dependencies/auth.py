@@ -1,12 +1,13 @@
 """Authentication dependencies for FastAPI."""
 
-from typing import Annotated
+from collections.abc import Callable, Coroutine
+from typing import Annotated, Any
 
 from fastapi import Cookie, Depends, HTTPException, status
 from src.adapters.auth.supabase import SupabaseAuthRepository
 from src.core.config import AuthConfig, SupabaseConfig, auth_config, supabase_config
 from src.domain.models.user import User
-from src.domain.services.auth_service import AuthService, AuthenticationError
+from src.domain.services.auth_service import AuthenticationError, AuthService
 
 
 def get_supabase_auth_repository() -> SupabaseAuthRepository:
@@ -69,7 +70,7 @@ async def get_current_user_optional(
         return None
 
 
-def require_roles(*required_roles: str):
+def require_roles(*required_roles: str) -> Callable[..., Coroutine[Any, Any, User]]:
     """Dependency factory for role-based access control."""
 
     async def role_checker(

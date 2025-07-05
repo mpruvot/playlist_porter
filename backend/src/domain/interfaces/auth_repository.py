@@ -1,13 +1,11 @@
 """Authentication repository protocol."""
 
 from typing import Protocol
+
 from src.domain.models.auth_session import (
     AuthSession,
-    LoginRequest,
-    OAuthCallback,
-    OAuthRequest,
-    RegisterRequest,
-    TokenPair,
+    SpotifyOAuthCallback,
+    SpotifyOAuthRequest,
 )
 from src.domain.models.user import User
 
@@ -15,19 +13,19 @@ from src.domain.models.user import User
 class AuthRepository(Protocol):
     """Authentication repository protocol."""
 
-    # OAuth methods (primary)
-    async def get_oauth_url(self, request: OAuthRequest) -> str:
-        """Get OAuth authorization URL."""
+    # Spotify OAuth methods
+    async def get_spotify_oauth_url(self, request: SpotifyOAuthRequest) -> str:
+        """Get Spotify OAuth authorization URL."""
         ...
 
-    async def exchange_oauth_code(
-        self, callback: OAuthCallback
+    async def exchange_spotify_oauth_code(
+        self, callback: SpotifyOAuthCallback
     ) -> tuple[User, AuthSession]:
-        """Exchange OAuth code for user and session."""
+        """Exchange Spotify OAuth code for user and session."""
         ...
 
-    async def refresh_oauth_session(self, refresh_token: str) -> AuthSession:
-        """Refresh OAuth session using refresh token."""
+    async def refresh_spotify_session(self, refresh_token: str) -> AuthSession:
+        """Refresh Spotify OAuth session using refresh token."""
         ...
 
     # Session management
@@ -46,13 +44,4 @@ class AuthRepository(Protocol):
     # User management
     async def get_user_by_auth_id(self, auth_id: str) -> User | None:
         """Get user by auth provider ID."""
-        ...
-
-    # Fallback email/password methods (optional)
-    async def register_user(self, request: RegisterRequest) -> User:
-        """Register a new user with email/password."""
-        ...
-
-    async def authenticate_user(self, request: LoginRequest) -> User:
-        """Authenticate user with email/password."""
         ...

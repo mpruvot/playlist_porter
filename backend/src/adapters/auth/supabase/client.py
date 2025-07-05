@@ -1,8 +1,10 @@
 """Supabase client for OAuth authentication."""
 
-from supabase import Client, create_client
+from typing import Any
+
 from src.core.config import AuthConfig, SupabaseConfig
 from src.infrastructure.logging import get_logger
+from supabase import Client, create_client
 
 logger = get_logger("adapters.auth.supabase.client")
 
@@ -29,16 +31,17 @@ class SupabaseClient:
     ) -> str:
         """Get OAuth authorization URL for the specified provider."""
         try:
-            credentials = {"provider": provider}
+            # Build OAuth credentials for Supabase
+            credentials: dict[str, Any] = {"provider": provider}
             if redirect_url or scopes:
-                options = {}
+                options: dict[str, Any] = {}
                 if redirect_url:
                     options["redirect_to"] = redirect_url
                 if scopes:
                     options["scopes"] = scopes
                 credentials["options"] = options
 
-            response = self.client.auth.sign_in_with_oauth(credentials)
+            response = self.client.auth.sign_in_with_oauth(credentials)  # type: ignore
 
             if hasattr(response, "url") and response.url:
                 logger.info(f"OAuth URL generated for provider: {provider}")
@@ -56,11 +59,11 @@ class SupabaseClient:
         """Exchange OAuth authorization code for session."""
         try:
             # Build code exchange parameters
-            code_params = {"auth_code": code}
+            code_params: dict[str, Any] = {"auth_code": code}
             if code_verifier:
                 code_params["code_verifier"] = code_verifier
 
-            response = self.client.auth.exchange_code_for_session(code_params)
+            response = self.client.auth.exchange_code_for_session(code_params)  # type: ignore
             logger.info("OAuth code exchanged successfully")
             return response.model_dump()
         except Exception as e:
@@ -116,26 +119,3 @@ class SupabaseClient:
             logger.warning(f"Sign out failed: {str(e)}")
             # Return True anyway - sign out should be permissive
             return True
-
-    # Fallback email/password methods
-    async def sign_up_with_email(self, email: str, password: str) -> dict:
-        """Sign up user with email and password (fallback)."""
-        try:
-            response = self.client.auth.sign_up({"email": email, "password": password})
-            logger.info(f"User signed up: {email}")
-            return response.model_dump()
-        except Exception as e:
-            logger.error(f"Sign up failed for {email}: {str(e)}")
-            raise
-
-    async def sign_in_with_email(self, email: str, password: str) -> dict:
-        """Sign in user with email and password (fallback)."""
-        try:
-            response = self.client.auth.sign_in_with_password(
-                {"email": email, "password": password}
-            )
-            logger.info(f"User signed in: {email}")
-            return response.model_dump()
-        except Exception as e:
-            logger.error(f"Sign in failed for {email}: {str(e)}")
-            raise

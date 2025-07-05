@@ -1,6 +1,7 @@
 """Domain model for authentication session."""
 
 from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -18,7 +19,9 @@ class AuthSession(BaseModel):
     provider_refresh_token: str | None = Field(
         default=None, description="OAuth provider refresh token"
     )
-    provider: str = Field(..., description="OAuth provider (spotify, google, etc.)")
+    provider: str = Field(
+        default="spotify", description="OAuth provider (always spotify)"
+    )
     expires_at: datetime = Field(..., description="Token expiration time")
     created_at: datetime = Field(..., description="Session creation time")
     last_used_at: datetime = Field(..., description="Last token usage time")
@@ -35,36 +38,17 @@ class TokenPair(BaseModel):
     expires_in: int = Field(..., description="Access token lifetime in seconds")
 
 
-class OAuthRequest(BaseModel):
-    """OAuth authentication request."""
+class SpotifyOAuthRequest(BaseModel):
+    """Spotify OAuth authentication request."""
 
-    provider: str = Field(
-        ..., description="OAuth provider (spotify, google, github, etc.)"
-    )
     redirect_url: str | None = Field(
         default=None, description="Redirect URL after auth"
     )
-    scopes: str | None = Field(default=None, description="OAuth scopes")
+    scopes: str | None = Field(default=None, description="Spotify OAuth scopes")
 
 
-class OAuthCallback(BaseModel):
-    """OAuth callback data."""
+class SpotifyOAuthCallback(BaseModel):
+    """Spotify OAuth callback data."""
 
-    code: str = Field(..., description="OAuth authorization code")
+    code: str = Field(..., description="Spotify authorization code")
     state: str | None = Field(default=None, description="OAuth state parameter")
-
-
-class LoginRequest(BaseModel):
-    """Login request payload (for email/password fallback)."""
-
-    email: str = Field(..., description="User email")
-    password: str = Field(..., min_length=8, description="User password")
-    remember_me: bool = Field(default=False, description="Keep session longer")
-
-
-class RegisterRequest(BaseModel):
-    """Registration request payload (for email/password fallback)."""
-
-    email: str = Field(..., description="User email")
-    password: str = Field(..., min_length=8, description="User password")
-    display_name: str | None = Field(default=None, description="Display name")

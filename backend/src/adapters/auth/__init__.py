@@ -1,9 +1,9 @@
 """Authentication adapters package."""
 
 from src.adapters.auth.supabase import (
+    SupabaseAuthMappers,
     SupabaseAuthRepository,
     SupabaseClient,
-    SupabaseAuthMappers,
 )
 
 __all__ = [

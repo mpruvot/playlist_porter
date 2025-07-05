@@ -1,7 +1,8 @@
 """Mappers to convert Supabase data to domain models."""
 
 from datetime import datetime
-from src.domain.models.auth_session import AuthSession, TokenPair
+
+from src.domain.models.auth_session import AuthSession
 from src.domain.models.user import User
 
 
@@ -39,35 +40,37 @@ class SupabaseAuthMappers:
         )
 
     @staticmethod
-    def tokens_from_data(token_data: dict) -> TokenPair:
-        """Convert token data to TokenPair domain model."""
-        return TokenPair(
-            access_token=token_data["access_token"],
-            refresh_token=token_data["refresh_token"],
-            token_type="bearer",
-            expires_in=token_data.get("expires_in", 900),  # Default 15 minutes
-        )
-
-    @staticmethod
-    def tokens_from_supabase_session(session_data: dict) -> TokenPair:
-        """Convert Supabase session to TokenPair domain model."""
-        session = session_data.get("session", {})
-        return TokenPair(
-            access_token=session.get("access_token", ""),
-            refresh_token=session.get("refresh_token", ""),
-            token_type="bearer",
-            expires_in=session.get("expires_in", 3600),  # Supabase default
-        )
-
-    @staticmethod
     def session_from_supabase(session_data: dict, provider: str) -> AuthSession:
         """Convert Supabase OAuth session to AuthSession domain model."""
         session = session_data.get("session", {})
         user = session_data.get("user", {})
 
-        # Extract provider token from session
-        provider_token = session.get("provider_token")
-        provider_refresh_token = session.get("provider_refresh_token")
+        # Extract Spotify tokens - check multiple possible locations
+        provider_token = None
+        provider_refresh_token = None
+
+        # Method 1: Direct from session (most common)
+        if session.get("provider_token"):
+            provider_token = session.get("provider_token")
+            provider_refresh_token = session.get("provider_refresh_token")
+
+        # Method 2: From user metadata (alternative location)
+        elif user.get("user_metadata", {}).get("provider_token"):
+            user_metadata = user.get("user_metadata", {})
+            provider_token = user_metadata.get("provider_token")
+            provider_refresh_token = user_metadata.get("provider_refresh_token")
+
+        # Method 3: From app metadata (admin/system tokens)
+        elif user.get("app_metadata", {}).get("provider_token"):
+            app_metadata = user.get("app_metadata", {})
+            provider_token = app_metadata.get("provider_token")
+            provider_refresh_token = app_metadata.get("provider_refresh_token")
+
+        # Method 4: From session user (nested structure)
+        elif session.get("user", {}).get("user_metadata", {}).get("provider_token"):
+            session_user_metadata = session.get("user", {}).get("user_metadata", {})
+            provider_token = session_user_metadata.get("provider_token")
+            provider_refresh_token = session_user_metadata.get("provider_refresh_token")
 
         return AuthSession(
             user_id=user.get("id", ""),
