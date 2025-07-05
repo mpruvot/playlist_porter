@@ -26,7 +26,6 @@ packages = ["src"]
 
 [dependency-groups]
 dev = [
-    "autoflake>=2.3.1",
     "mypy>=1.16.1",
     "poethepoet>=0.35.0",
 ]
@@ -40,29 +39,25 @@ test = [
 ]
 
 [tool.poe.tasks]
+# Linting & Formatting
+format = "ruff format src/"
+lint = "ruff check --fix src/"
+check = "ruff check src/"
 
-ruff-check = "ruff check src/"
-ruff-fix = "ruff check --fix src/"
-ruff-format = "ruff format src/"
-clean-imports = "autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive src/"
-check-imports = "autoflake --check --remove-all-unused-imports --recursive src/"
+# Type checking
 type-check = "mypy src"
-type-check-relaxed = "mypy src --disable-error-code no-any-return --disable-error-code attr-defined"
+type-check-strict = "mypy src --strict"
 
+# Development
 dev = "python run_dev.py"
 dev-reload = "uvicorn src.main:app --reload --host 0.0.0.0 --port 8000"
-run-prd = "uvicorn src.main:app --host 0.0.0.0 --port 8000"
 
-format = ["ruff-format", "clean-imports"]
-lint = ["ruff-fix", "clean-imports", "type-check-relaxed"]
-check = ["ruff-check", "check-imports", "type-check-relaxed"]
-check-strict = ["ruff-check", "check-imports", "type-check"]
-all = ["ruff-fix", "ruff-format", "clean-imports", "type-check-relaxed"]
+# Production
+run = "uvicorn src.main:app --host 0.0.0.0 --port 8000"
 
-test = "pytest tests/"
-test-cov = "pytest tests/ --cov=src --cov-report=html --cov-report=term"
-test-unit = "pytest tests/unit/"
-test-integration = "pytest tests/integration/"
+# CI pipeline
+ci = ["check", "type-check"]
+quality = ["format", "lint", "type-check"]
 
 [tool.ruff]
 target-version = "py311"
