@@ -13,6 +13,10 @@ dependencies = [
     # Web client dependencies
     "jinja2>=3.1.0",
     "python-multipart>=0.0.6",
+    # Authentication
+    "supabase>=2.0.0",
+    "pyjwt>=2.8.0",
+    "passlib[bcrypt]>=1.7.4",
     # "redis>=5.0.0",
     "ruff>=0.12.1",
 ]

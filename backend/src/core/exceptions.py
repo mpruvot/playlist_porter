@@ -22,6 +22,10 @@ class AuthenticationError(PlaylistPorterError):
     """Raised when authentication fails."""
 
 
+class AuthorizationError(PlaylistPorterError):
+    """Raised when authorization fails."""
+
+
 class SpotifyAPIError(PlaylistPorterError):
     """Raised when Spotify API calls fail."""
 

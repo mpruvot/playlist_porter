@@ -1,5 +1,6 @@
 """Domain model for User."""
 
+from datetime import datetime
 from pydantic import BaseModel, Field
 
 
@@ -15,3 +16,11 @@ class User(BaseModel):
     image_url: str | None = Field(default=None, description="User profile image URL")
     country: str | None = Field(default=None, description="User country")
     followers_count: int = Field(default=0, description="Number of followers")
+
+    # Authentication fields
+    auth_id: str | None = Field(default=None, description="Supabase Auth ID")
+    is_authenticated: bool = Field(default=False, description="Auth status")
+    roles: list[str] = Field(default_factory=list, description="User roles")
+    created_at: datetime | None = Field(default=None, description="Account creation")
+    last_login: datetime | None = Field(default=None, description="Last login")
+    is_active: bool = Field(default=True, description="Account status")
