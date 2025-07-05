@@ -1,11 +1,5 @@
-"""Domain service for authentication business logic."""
-
 from src.domain.interfaces.auth_repository import AuthRepository
-from src.domain.models.auth_session import (
-    AuthSession,
-    SpotifyOAuthCallback,
-    SpotifyOAuthRequest,
-)
+from src.domain.models.auth_session import AuthSession, OAuthCallback, OAuthRequest
 from src.domain.models.user import User
 
 
@@ -24,23 +18,25 @@ class AuthService:
     def __init__(self, auth_repository: AuthRepository):
         self.auth_repository = auth_repository
 
-    # Spotify OAuth methods
-    async def get_spotify_oauth_url(self, request: SpotifyOAuthRequest) -> str:
-        """Get Spotify OAuth authorization URL."""
+    # Generic OAuth methods
+    async def get_oauth_url(self, request: OAuthRequest) -> str:
+        """Get OAuth authorization URL for specified provider."""
         try:
-            return await self.auth_repository.get_spotify_oauth_url(request)
+            return await self.auth_repository.get_oauth_url(
+                request.provider, request.scopes or ""
+            )
         except Exception as e:
             raise AuthenticationError(
-                f"Spotify OAuth URL generation failed: {str(e)}", 400
+                f"OAuth URL generation failed for {request.provider}: {str(e)}", 400
             )
 
-    async def handle_spotify_callback(
-        self, callback: SpotifyOAuthCallback
+    async def handle_oauth_callback(
+        self, callback: OAuthCallback
     ) -> tuple[User, AuthSession]:
-        """Handle Spotify OAuth callback and create user session."""
+        """Handle OAuth callback and create user session."""
         try:
-            user, session = await self.auth_repository.exchange_spotify_oauth_code(
-                callback
+            user, session = await self.auth_repository.exchange_oauth_code(
+                callback.provider, callback.code, callback.state
             )
 
             if not user.is_active:
@@ -50,7 +46,9 @@ class AuthService:
         except AuthenticationError:
             raise
         except Exception as e:
-            raise AuthenticationError(f"Spotify OAuth callback failed: {str(e)}", 401)
+            raise AuthenticationError(
+                f"OAuth callback failed for {callback.provider}: {str(e)}", 401
+            )
 
     async def verify_session_token(self, token: str) -> User:
         """Verify session token and return authenticated user."""
@@ -74,7 +72,7 @@ class AuthService:
     async def refresh_session(self, refresh_token: str) -> AuthSession:
         """Refresh session using refresh token."""
         try:
-            session = await self.auth_repository.refresh_spotify_session(refresh_token)
+            session = await self.auth_repository.refresh_session(refresh_token)
             return session
         except Exception as e:
             raise AuthenticationError(f"Session refresh failed: {str(e)}", 401)

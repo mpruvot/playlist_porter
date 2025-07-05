@@ -1,31 +1,25 @@
-"""Authentication repository protocol."""
-
 from typing import Protocol
 
-from src.domain.models.auth_session import (
-    AuthSession,
-    SpotifyOAuthCallback,
-    SpotifyOAuthRequest,
-)
+from src.domain.models.auth_session import AuthSession
 from src.domain.models.user import User
 
 
 class AuthRepository(Protocol):
     """Authentication repository protocol."""
 
-    # Spotify OAuth methods
-    async def get_spotify_oauth_url(self, request: SpotifyOAuthRequest) -> str:
-        """Get Spotify OAuth authorization URL."""
+    # Generic OAuth methods
+    async def get_oauth_url(self, provider: str, scopes: str) -> str:
+        """Get OAuth authorization URL for specified provider."""
         ...
 
-    async def exchange_spotify_oauth_code(
-        self, callback: SpotifyOAuthCallback
+    async def exchange_oauth_code(
+        self, provider: str, code: str, state: str | None = None
     ) -> tuple[User, AuthSession]:
-        """Exchange Spotify OAuth code for user and session."""
+        """Exchange OAuth code for user and session."""
         ...
 
-    async def refresh_spotify_session(self, refresh_token: str) -> AuthSession:
-        """Refresh Spotify OAuth session using refresh token."""
+    async def refresh_session(self, refresh_token: str) -> AuthSession:
+        """Refresh OAuth session using refresh token."""
         ...
 
     # Session management

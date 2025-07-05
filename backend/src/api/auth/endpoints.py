@@ -1,5 +1,3 @@
-"""Authentication endpoints."""
-
 from datetime import timedelta
 from typing import Annotated, Literal, cast
 
@@ -19,50 +17,57 @@ from src.api.dependencies.auth import (
     get_current_user,
 )
 from src.core.config import AuthConfig
-from src.domain.models.auth_session import (
-    AuthSession,
-    SpotifyOAuthCallback,
-    SpotifyOAuthRequest,
-)
+from src.domain.models.auth_session import AuthSession, OAuthCallback, OAuthRequest
 from src.domain.models.user import User
 from src.domain.services.auth_service import AuthenticationError, AuthService
 
 router = APIRouter()
 
 
-@router.get("/spotify/login", response_class=RedirectResponse)
-async def spotify_login(
+@router.get("/{provider}/login", response_class=RedirectResponse)
+async def oauth_login(
+    provider: str,
     auth_service: Annotated[AuthService, Depends(get_auth_service)],
-    redirect_url: str | None = Query(
-        default=None, description="Redirect URL after auth"
-    ),
 ) -> RedirectResponse:
-    """Initiate Spotify OAuth login."""
+    """Initiate OAuth login for specified provider."""
     try:
-        request = SpotifyOAuthRequest(
-            redirect_url=redirect_url,
-            scopes="user-read-private user-read-email playlist-read-private playlist-modify-public playlist-modify-private",
+        scopes_map = {
+            "spotify": "user-read-private user-read-email playlist-read-private playlist-modify-public playlist-modify-private",
+            "apple": "name email",
+            "youtube": "https://www.googleapis.com/auth/youtube.readonly",
+        }
+
+        if provider not in scopes_map:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Provider '{provider}' is not supported",
+            )
+
+        request = OAuthRequest(
+            provider=provider,
+            scopes=scopes_map[provider],
         )
 
-        oauth_url = await auth_service.get_spotify_oauth_url(request)
+        oauth_url = await auth_service.get_oauth_url(request)
         return RedirectResponse(url=oauth_url)
 
     except AuthenticationError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
-@router.post("/spotify/callback", response_model=User)
-async def spotify_callback(
+@router.post("/{provider}/callback", response_model=User)
+async def oauth_callback(
+    provider: str,
     response: Response,
     auth_service: Annotated[AuthService, Depends(get_auth_service)],
     auth_config: Annotated[AuthConfig, Depends(get_auth_config)],
-    code: str = Query(..., description="Spotify authorization code"),
+    code: str = Query(..., description="OAuth authorization code"),
     state: str | None = Query(default=None, description="OAuth state parameter"),
 ) -> User:
-    """Handle Spotify OAuth callback and create user session."""
+    """Handle OAuth callback and create user session."""
     try:
-        callback = SpotifyOAuthCallback(code=code, state=state)
-        user, session = await auth_service.handle_spotify_callback(callback)
+        callback = OAuthCallback(provider=provider, code=code, state=state)
+        user, session = await auth_service.handle_oauth_callback(callback)
 
         # Set secure cookies with Supabase tokens
         _set_session_cookies(response, session, auth_config)

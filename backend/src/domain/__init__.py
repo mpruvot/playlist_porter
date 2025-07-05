@@ -1,5 +1,3 @@
-"""Domain layer for Playlist Porter - Business Logic and Models."""
-
 from src.domain.interfaces import PlaylistRepository
 from src.domain.models import Album, Artist, Playlist, Track, User
 from src.domain.services import MigrationManager, PlaylistManager

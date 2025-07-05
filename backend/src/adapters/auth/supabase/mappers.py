@@ -1,5 +1,3 @@
-"""Mappers to convert Supabase data to domain models."""
-
 from datetime import datetime
 
 from src.domain.models.auth_session import AuthSession

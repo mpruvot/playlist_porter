@@ -1,14 +1,8 @@
-"""Supabase OAuth implementation of AuthRepository."""
-
 from src.adapters.auth.supabase.client import SupabaseClient
 from src.adapters.auth.supabase.mappers import SupabaseAuthMappers
 from src.core.config import AuthConfig, SupabaseConfig
 from src.core.exceptions import AuthenticationError
-from src.domain.models.auth_session import (
-    AuthSession,
-    SpotifyOAuthCallback,
-    SpotifyOAuthRequest,
-)
+from src.domain.models.auth_session import AuthSession
 from src.domain.models.user import User
 from src.infrastructure.logging import get_logger
 
@@ -22,58 +16,61 @@ class SupabaseAuthRepository:
         self.client = SupabaseClient(supabase_config, auth_config)
         self.mappers = SupabaseAuthMappers()
 
-    # Spotify OAuth methods
-    async def get_spotify_oauth_url(self, request: SpotifyOAuthRequest) -> str:
-        """Get Spotify OAuth authorization URL."""
+    # Generic OAuth methods
+    async def get_oauth_url(self, provider: str, scopes: str) -> str:
+        """Get OAuth authorization URL for specified provider."""
         try:
             return await self.client.get_oauth_url(
-                provider="spotify",
-                redirect_url=request.redirect_url,
-                scopes=request.scopes,
+                provider=provider,
+                redirect_url=None,  # Supabase handles redirect URL
+                scopes=scopes,
             )
         except Exception as e:
-            logger.error(f"Spotify OAuth URL generation failed: {str(e)}")
-            raise AuthenticationError(f"Spotify OAuth URL generation failed: {str(e)}")
+            logger.error(f"{provider} OAuth URL generation failed: {str(e)}")
+            raise AuthenticationError(
+                f"{provider} OAuth URL generation failed: {str(e)}"
+            )
 
-    async def exchange_spotify_oauth_code(
-        self, callback: SpotifyOAuthCallback
+    async def exchange_oauth_code(
+        self, provider: str, code: str, state: str | None = None
     ) -> tuple[User, AuthSession]:
-        """Exchange Spotify OAuth code for user and session."""
+        """Exchange OAuth code for user and session."""
         try:
             # Exchange the code for a session
-            session_data = await self.client.exchange_oauth_code(callback.code)
+            session_data = await self.client.exchange_oauth_code(code)
 
             if not session_data.get("user"):
                 raise AuthenticationError(
-                    "Spotify OAuth exchange failed: No user returned"
+                    f"{provider} OAuth exchange failed: No user returned"
                 )
 
-            # Map to domain models - always Spotify
-            user = self.mappers.user_from_oauth_session(session_data, "spotify")
-            session = self.mappers.session_from_supabase(session_data, "spotify")
+            # Map to domain models
+            user = self.mappers.user_from_oauth_session(session_data, provider)
+            session = self.mappers.session_from_supabase(session_data, provider)
 
-            logger.info(f"Spotify OAuth exchange successful for user: {user.email}")
+            logger.info(f"{provider} OAuth exchange successful for user: {user.email}")
             return user, session
         except Exception as e:
-            logger.error(f"Spotify OAuth code exchange failed: {str(e)}")
+            logger.error(f"{provider} OAuth code exchange failed: {str(e)}")
             if isinstance(e, AuthenticationError):
                 raise
-            raise AuthenticationError(f"Spotify OAuth exchange failed: {str(e)}")
+            raise AuthenticationError(f"{provider} OAuth exchange failed: {str(e)}")
 
-    async def refresh_spotify_session(self, refresh_token: str) -> AuthSession:
-        """Refresh Spotify OAuth session using refresh token."""
+    async def refresh_session(self, refresh_token: str) -> AuthSession:
+        """Refresh OAuth session using refresh token."""
         try:
             # Set the refresh token and refresh the session
             session_data = await self.client.refresh_session()
 
-            # Always Spotify
-            session = self.mappers.session_from_supabase(session_data, "spotify")
+            # Determine provider from session data, default to spotify
+            provider = session_data.get("session", {}).get("provider", "spotify")
+            session = self.mappers.session_from_supabase(session_data, provider)
 
-            logger.info("Spotify OAuth session refreshed successfully")
+            logger.info(f"{provider} OAuth session refreshed successfully")
             return session
         except Exception as e:
-            logger.error(f"Spotify OAuth session refresh failed: {str(e)}")
-            raise AuthenticationError(f"Spotify session refresh failed: {str(e)}")
+            logger.error(f"OAuth session refresh failed: {str(e)}")
+            raise AuthenticationError(f"Session refresh failed: {str(e)}")
 
     # Session management
     async def verify_session_token(self, token: str) -> User | None:

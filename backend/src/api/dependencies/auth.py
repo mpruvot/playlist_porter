@@ -1,5 +1,3 @@
-"""Authentication dependencies for FastAPI."""
-
 from collections.abc import Callable, Coroutine
 from typing import Annotated, Any
 
@@ -111,7 +109,6 @@ def require_authenticated_user(
     return current_user
 
 
-# Commonly used dependency combinations
 CurrentUser = Annotated[User, Depends(get_current_user)]
 CurrentUserOptional = Annotated[User | None, Depends(get_current_user_optional)]
 ActiveUser = Annotated[User, Depends(require_active_user)]

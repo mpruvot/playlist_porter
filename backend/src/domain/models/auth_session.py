@@ -1,5 +1,3 @@
-"""Domain model for authentication session."""
-
 from datetime import datetime
 
 from pydantic import BaseModel, Field
@@ -19,9 +17,7 @@ class AuthSession(BaseModel):
     provider_refresh_token: str | None = Field(
         default=None, description="OAuth provider refresh token"
     )
-    provider: str = Field(
-        default="spotify", description="OAuth provider (always spotify)"
-    )
+    provider: str = Field(..., description="OAuth provider (spotify, apple, etc.)")
     expires_at: datetime = Field(..., description="Token expiration time")
     created_at: datetime = Field(..., description="Session creation time")
     last_used_at: datetime = Field(..., description="Last token usage time")
@@ -38,17 +34,16 @@ class TokenPair(BaseModel):
     expires_in: int = Field(..., description="Access token lifetime in seconds")
 
 
-class SpotifyOAuthRequest(BaseModel):
-    """Spotify OAuth authentication request."""
+class OAuthRequest(BaseModel):
+    """Generic OAuth authentication request."""
 
-    redirect_url: str | None = Field(
-        default=None, description="Redirect URL after auth"
-    )
-    scopes: str | None = Field(default=None, description="Spotify OAuth scopes")
+    provider: str = Field(..., description="OAuth provider (spotify, apple, etc.)")
+    scopes: str | None = Field(default=None, description="OAuth scopes")
 
 
-class SpotifyOAuthCallback(BaseModel):
-    """Spotify OAuth callback data."""
+class OAuthCallback(BaseModel):
+    """Generic OAuth callback data."""
 
-    code: str = Field(..., description="Spotify authorization code")
+    provider: str = Field(..., description="OAuth provider (spotify, apple, etc.)")
+    code: str = Field(..., description="OAuth authorization code")
     state: str | None = Field(default=None, description="OAuth state parameter")

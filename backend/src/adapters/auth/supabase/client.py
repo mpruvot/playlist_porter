@@ -1,10 +1,8 @@
-"""Supabase client for OAuth authentication."""
-
 from typing import Any
 
 from src.core.config import AuthConfig, SupabaseConfig
 from src.infrastructure.logging import get_logger
-from supabase import Client, create_client
+from supabase import Client, ClientOptions, create_client
 
 logger = get_logger("adapters.auth.supabase.client")
 
@@ -22,7 +20,9 @@ class SupabaseClient:
         """Get or create Supabase client."""
         if self._client is None:
             self._client = create_client(
-                self.supabase_config.url, self.supabase_config.anon_key
+                self.supabase_config.url,
+                self.supabase_config.anon_key,
+                options=ClientOptions(flow_type="implicit"),
             )
         return self._client
 

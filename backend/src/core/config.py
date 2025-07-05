@@ -80,5 +80,4 @@ def get_settings() -> tuple[AppConfig, SpotifyConfig, SupabaseConfig, AuthConfig
     return AppConfig(), SpotifyConfig(), SupabaseConfig(), AuthConfig()
 
 
-# Global instances
 app_config, spotify_config, supabase_config, auth_config = get_settings()

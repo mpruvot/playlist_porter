@@ -1,9 +1,7 @@
-"""Domain models for Playlist Porter."""
-
 from src.domain.models.auth_session import (
     AuthSession,
-    SpotifyOAuthCallback,
-    SpotifyOAuthRequest,
+    OAuthCallback,
+    OAuthRequest,
     TokenPair,
 )
 from src.domain.models.playlist import Playlist
@@ -18,6 +16,6 @@ __all__ = [
     "User",
     "AuthSession",
     "TokenPair",
-    "SpotifyOAuthRequest",
-    "SpotifyOAuthCallback",
+    "OAuthRequest",
+    "OAuthCallback",
 ]
